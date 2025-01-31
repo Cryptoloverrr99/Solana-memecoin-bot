@@ -1,27 +1,23 @@
 import requests
+from config.settings import settings
 
 def get_dexscreener_data(token_address: str):
     """
     Récupère les données d'un token depuis Dexscreener.
+    Exemple d'endpoint : https://api.dexscreener.com/v1/tokens/{token_address}
     """
-    endpoint = f"https://api.dexscreener.com/v1/tokens/{token_address}"
     try:
-        response = requests.get(endpoint)
+        url = f"https://api.dexscreener.com/v1/tokens/{token_address}"
+        headers = {"Authorization": f"Bearer {settings.DEXSCREENER_API_KEY}"}  # Si une clé est requise
+        response = requests.get(url, headers=headers)
         data = response.json()
         
-        # Vérifie si des paires existent
-        if not data.get("pairs"):
-            return {"error": "Aucune paire trouvée pour ce token."}
-        
-        # Prend la première paire (la plus liquide)
-        pair = data["pairs"][0]
-        
+        # Extraction des données pertinentes (ajustez selon la réponse de l'API)
         return {
-            "price": pair.get("priceUsd", 0),
-            "liquidity": pair.get("liquidity", {}).get("usd", 0),
-            "holders": pair.get("holders", 0),
-            "url": pair.get("url", ""),
-            "symbol": pair.get("baseToken", {}).get("symbol", "N/A")
+            "price": data["pairs"][0]["priceUsd"],
+            "liquidity": data["pairs"][0]["liquidity"]["usd"],
+            "holders": data["pairs"][0]["holders"],
+            "is_trending": data["pairs"][0]["txns"]["h24"] > 1000  # Exemple de condition "trending"
         }
     except Exception as e:
-        return {"error": f"Erreur API Dexscreener: {str(e)}"}
+        raise Exception(f"Erreur Dexscreener : {str(e)}")
